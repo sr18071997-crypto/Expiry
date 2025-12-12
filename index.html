@@ -1,0 +1,2474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expiry Notification System</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --danger-color: #e74c3c;
+            --warning-color: #f39c12;
+            --success-color: #27ae60;
+            --light-color: #ecf0f1;
+            --dark-color: #34495e;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            min-height: 100vh;
+            padding: 10px;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        /* PIN Protection Modal */
+        .pin-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+        
+        .pin-container {
+            background-color: white;
+            padding: 30px 20px;
+            border-radius: 12px;
+            text-align: center;
+            width: 100%;
+            max-width: 350px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .pin-container h2 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+            font-size: 22px;
+        }
+        
+        .pin-container p {
+            margin-bottom: 20px;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .pin-input {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .pin-input input {
+            width: 45px;
+            height: 50px;
+            text-align: center;
+            font-size: 20px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            outline: none;
+            transition: all 0.3s;
+        }
+        
+        .pin-input input:focus {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+        
+        .pin-error {
+            color: var(--danger-color);
+            margin-top: 10px;
+            min-height: 20px;
+            font-size: 14px;
+        }
+        
+        /* Change PIN Modal */
+        .change-pin-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1001;
+            padding: 20px;
+        }
+        
+        .change-pin-container {
+            background-color: white;
+            padding: 25px 20px;
+            border-radius: 12px;
+            text-align: center;
+            width: 100%;
+            max-width: 350px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* Header */
+        header {
+            background: linear-gradient(135deg, var(--primary-color), var(--dark-color));
+            color: white;
+            padding: 20px 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        @media (min-width: 768px) {
+            header {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+                padding: 25px 30px;
+            }
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .logo i {
+            font-size: 28px;
+            color: var(--warning-color);
+        }
+        
+        .logo h1 {
+            font-size: 22px;
+            font-weight: 700;
+        }
+        
+        @media (min-width: 768px) {
+            .logo h1 {
+                font-size: 28px;
+            }
+        }
+        
+        .header-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+        
+        @media (min-width: 768px) {
+            .header-controls {
+                flex-wrap: nowrap;
+                justify-content: flex-end;
+            }
+        }
+        
+        .item-count {
+            background-color: rgba(255, 255, 255, 0.2);
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        /* Navigation */
+        nav {
+            background-color: white;
+            padding: 0 10px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        @media (min-width: 768px) {
+            nav {
+                padding: 0 30px;
+                justify-content: flex-start;
+            }
+        }
+        
+        .nav-btn {
+            padding: 12px 15px;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            font-size: 14px;
+            font-weight: 600;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex: 1;
+            min-width: 140px;
+            justify-content: center;
+        }
+        
+        @media (min-width: 768px) {
+            .nav-btn {
+                padding: 18px 25px;
+                font-size: 16px;
+                flex: none;
+                min-width: auto;
+            }
+        }
+        
+        .nav-btn:hover {
+            color: var(--primary-color);
+            background-color: rgba(52, 152, 219, 0.05);
+        }
+        
+        .nav-btn.active {
+            color: var(--secondary-color);
+            border-bottom-color: var(--secondary-color);
+            background-color: rgba(52, 152, 219, 0.1);
+        }
+        
+        .nav-btn i {
+            font-size: 16px;
+        }
+        
+        /* Main Content */
+        .content {
+            padding: 20px 15px;
+            min-height: 500px;
+        }
+        
+        @media (min-width: 768px) {
+            .content {
+                padding: 30px;
+            }
+        }
+        
+        /* Section Headers */
+        .section-header {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #eee;
+        }
+        
+        @media (min-width: 768px) {
+            .section-header {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+            }
+        }
+        
+        .section-header h2 {
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 20px;
+        }
+        
+        @media (min-width: 768px) {
+            .section-header h2 {
+                font-size: 24px;
+            }
+        }
+        
+        .section-header h2 i {
+            color: var(--secondary-color);
+        }
+        
+        /* Colorful Bubbles for Expiring Items */
+        .bubble-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        @media (min-width: 600px) {
+            .bubble-container {
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            }
+        }
+        
+        .expiry-bubble {
+            padding: 20px;
+            border-radius: 15px;
+            color: white;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .expiry-bubble:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        .expiry-bubble::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 6px;
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+        
+        .bubble-header {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        @media (min-width: 480px) {
+            .bubble-header {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: flex-start;
+            }
+        }
+        
+        .barcode {
+            font-family: monospace;
+            background-color: rgba(0, 0, 0, 0.2);
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            font-size: 14px;
+            word-break: break-all;
+        }
+        
+        .expiry-date {
+            font-weight: 700;
+            font-size: 14px;
+            background-color: rgba(0, 0, 0, 0.3);
+            padding: 5px 10px;
+            border-radius: 20px;
+            white-space: nowrap;
+        }
+        
+        .product-description {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            line-height: 1.3;
+            word-break: break-word;
+        }
+        
+        .product-quantity {
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        /* Days indicator */
+        .days-left {
+            position: absolute;
+            bottom: 15px;
+            right: 15px;
+            background-color: rgba(0, 0, 0, 0.3);
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-weight: 600;
+            font-size: 13px;
+        }
+        
+        /* Form for Adding Products */
+        .add-form {
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 12px;
+            width: 100%;
+            margin: 0 auto;
+        }
+        
+        @media (min-width: 768px) {
+            .add-form {
+                max-width: 600px;
+                padding: 30px;
+            }
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: var(--dark-color);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        
+        .form-control:focus {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+            outline: none;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+        
+        @media (min-width: 480px) {
+            .form-row {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .btn-sm {
+            padding: 8px 15px;
+            font-size: 14px;
+        }
+        
+        .btn-primary {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+        
+        .btn-danger {
+            background-color: var(--danger-color);
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+        
+        .btn-warning {
+            background-color: var(--warning-color);
+            color: white;
+        }
+        
+        .btn-warning:hover {
+            background-color: #e67e22;
+        }
+        
+        .btn-info {
+            background-color: #17a2b8;
+            color: white;
+        }
+        
+        .btn-info:hover {
+            background-color: #138496;
+        }
+        
+        .btn-success {
+            background-color: var(--success-color);
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background-color: #219653;
+        }
+        
+        /* Product List Tables */
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+            margin-top: 20px;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .product-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 600px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        .product-table th {
+            background-color: var(--primary-color);
+            color: white;
+            text-align: left;
+            padding: 12px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        @media (min-width: 768px) {
+            .product-table th {
+                padding: 15px;
+            }
+        }
+        
+        .product-table td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            font-size: 14px;
+        }
+        
+        @media (min-width: 768px) {
+            .product-table td {
+                padding: 15px;
+                font-size: 16px;
+            }
+        }
+        
+        .product-table tr:hover {
+            background-color: #f9f9f9;
+        }
+        
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            display: inline-block;
+        }
+        
+        .status-expired {
+            background-color: #ffebee;
+            color: var(--danger-color);
+        }
+        
+        .status-warning {
+            background-color: #fff8e1;
+            color: var(--warning-color);
+        }
+        
+        .status-good {
+            background-color: #e8f5e9;
+            color: var(--success-color);
+        }
+        
+        .status-critical {
+            background-color: #ffcdd2;
+            color: #c62828;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        
+        .action-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            color: #666;
+            padding: 5px;
+            transition: color 0.3s;
+        }
+        
+        .action-btn:hover {
+            color: var(--danger-color);
+        }
+        
+        /* Alert Sounds */
+        .alert-sound {
+            display: none;
+        }
+        
+        /* Footer */
+        footer {
+            background-color: var(--dark-color);
+            color: white;
+            text-align: center;
+            padding: 20px 15px;
+            margin-top: 30px;
+            position: relative;
+        }
+        
+        .signature {
+            margin-top: 10px;
+            font-style: italic;
+            font-size: 14px;
+            opacity: 0.9;
+            color: #f1c40f;
+            line-height: 1.4;
+        }
+        
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #888;
+        }
+        
+        .empty-state i {
+            font-size: 50px;
+            margin-bottom: 15px;
+            color: #ddd;
+        }
+        
+        .empty-state h3 {
+            font-size: 20px;
+            margin-bottom: 10px;
+            color: #aaa;
+        }
+        
+        /* Animation for saved product */
+        @keyframes savedAnimation {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .saved-effect {
+            animation: savedAnimation 0.5s ease;
+        }
+        
+        /* Delete Confirmation Modal */
+        .delete-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1002;
+            padding: 20px;
+        }
+        
+        .delete-container {
+            background-color: white;
+            padding: 25px 20px;
+            border-radius: 12px;
+            text-align: center;
+            width: 100%;
+            max-width: 350px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #2ecc71;
+            color: white;
+            padding: 12px 25px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            z-index: 1003;
+            display: none;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            max-width: 90%;
+            animation: slideUp 0.3s ease;
+        }
+        
+        @keyframes slideUp {
+            from {
+                transform: translate(-50%, 100%);
+                opacity: 0;
+            }
+            to {
+                transform: translate(-50%, 0);
+                opacity: 1;
+            }
+        }
+        
+        .toast-error {
+            background-color: #e74c3c;
+        }
+        
+        .toast-warning {
+            background-color: #f39c12;
+        }
+        
+        .toast-info {
+            background-color: #3498db;
+        }
+        
+        /* Sound Alert Indicator */
+        .sound-alert-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: var(--warning-color);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            z-index: 999;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideInRight 0.3s ease;
+            cursor: pointer;
+        }
+        
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .sound-alert-indicator:hover {
+            background-color: #e67e22;
+        }
+        
+        /* Alert Settings Panel */
+        .alert-settings {
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 20px;
+            max-width: 500px;
+        }
+        
+        .alert-settings h3 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .settings-row {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        @media (min-width: 480px) {
+            .settings-row {
+                flex-direction: row;
+                align-items: center;
+                justify-content: space-between;
+            }
+        }
+        
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 30px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .toggle-slider {
+            background-color: var(--success-color);
+        }
+        
+        input:checked + .toggle-slider:before {
+            transform: translateX(30px);
+        }
+        
+        .alert-count {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background-color: var(--danger-color);
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <!-- PIN Protection Modal (First time only) -->
+    <div id="firstTimePinModal" class="pin-modal" style="display: none;">
+        <div class="pin-container">
+            <i class="fas fa-lock" style="font-size: 42px; color: #3498db; margin-bottom: 15px;"></i>
+            <h2>Welcome to Expiry Notification System</h2>
+            <p>Set your PIN for first-time access</p>
+            <div class="pin-input">
+                <input type="password" maxlength="1" id="firstPin1" autofocus>
+                <input type="password" maxlength="1" id="firstPin2">
+                <input type="password" maxlength="1" id="firstPin3">
+                <input type="password" maxlength="1" id="firstPin4">
+            </div>
+            <div class="pin-input" style="margin-top: 15px;">
+                <input type="password" maxlength="1" id="confirmPin1" placeholder="C">
+                <input type="password" maxlength="1" id="confirmPin2" placeholder="O">
+                <input type="password" maxlength="1" id="confirmPin3" placeholder="N">
+                <input type="password" maxlength="1" id="confirmPin4" placeholder="F">
+            </div>
+            <p style="font-size: 13px; margin-top: 5px; color: #666;">Confirm PIN</p>
+            <div class="pin-error" id="firstPinError"></div>
+            <button class="btn btn-primary" id="setPinSubmit" style="margin-top: 10px; width: 100%;">
+                <i class="fas fa-key"></i> Set PIN & Continue
+            </button>
+        </div>
+    </div>
+
+    <!-- Change PIN Modal -->
+    <div id="changePinModal" class="change-pin-modal">
+        <div class="change-pin-container">
+            <i class="fas fa-key" style="font-size: 42px; color: #3498db; margin-bottom: 15px;"></i>
+            <h2>Change PIN</h2>
+            
+            <div style="margin-bottom: 15px;">
+                <label style="text-align: left; display: block; margin-bottom: 6px; font-size: 14px;">Current PIN</label>
+                <div class="pin-input">
+                    <input type="password" maxlength="1" id="currentPin1">
+                    <input type="password" maxlength="1" id="currentPin2">
+                    <input type="password" maxlength="1" id="currentPin3">
+                    <input type="password" maxlength="1" id="currentPin4">
+                </div>
+            </div>
+            
+            <div style="margin-bottom: 15px;">
+                <label style="text-align: left; display: block; margin-bottom: 6px; font-size: 14px;">New PIN</label>
+                <div class="pin-input">
+                    <input type="password" maxlength="1" id="newPin1">
+                    <input type="password" maxlength="1" id="newPin2">
+                    <input type="password" maxlength="1" id="newPin3">
+                    <input type="password" maxlength="1" id="newPin4">
+                </div>
+            </div>
+            
+            <div style="margin-bottom: 15px;">
+                <label style="text-align: left; display: block; margin-bottom: 6px; font-size: 14px;">Confirm New PIN</label>
+                <div class="pin-input">
+                    <input type="password" maxlength="1" id="confirmNewPin1">
+                    <input type="password" maxlength="1" id="confirmNewPin2">
+                    <input type="password" maxlength="1" id="confirmNewPin3">
+                    <input type="password" maxlength="1" id="confirmNewPin4">
+                </div>
+            </div>
+            
+            <div class="pin-error" id="changePinError"></div>
+            <div style="display: flex; gap: 10px; margin-top: 15px; flex-direction: column;">
+                <button class="btn btn-primary" id="saveNewPin" style="width: 100%;">
+                    <i class="fas fa-save"></i> Change PIN
+                </button>
+                <button class="btn btn-danger" id="cancelChangePin" style="width: 100%;">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal" class="delete-modal">
+        <div class="delete-container">
+            <i class="fas fa-exclamation-triangle" style="font-size: 48px; color: #e74c3c; margin-bottom: 15px;"></i>
+            <h2 style="color: var(--danger-color);">Confirm Deletion</h2>
+            <p id="deleteMessage" style="margin-bottom: 20px;">Are you sure you want to delete this item?</p>
+            <div class="pin-input" style="margin-bottom: 20px; display: none;" id="pinVerifySection">
+                <input type="password" maxlength="1" id="deletePin1" placeholder="P">
+                <input type="password" maxlength="1" id="deletePin2" placeholder="I">
+                <input type="password" maxlength="1" id="deletePin3" placeholder="N">
+                <input type="password" maxlength="1" id="deletePin4" placeholder="">
+            </div>
+            <div class="pin-error" id="deletePinError"></div>
+            <div style="display: flex; gap: 10px; margin-top: 10px; flex-direction: column;">
+                <button class="btn btn-danger" id="confirmDelete" style="width: 100%;">
+                    <i class="fas fa-trash-alt"></i> Delete
+                </button>
+                <button class="btn btn-primary" id="cancelDelete" style="width: 100%;">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast">
+        <i class="fas fa-check-circle"></i>
+        <span id="toastMessage">Operation completed successfully!</span>
+    </div>
+
+    <!-- Sound Alert Indicator -->
+    <div id="soundAlertIndicator" class="sound-alert-indicator" style="display: none;">
+        <i class="fas fa-bell"></i>
+        <span id="alertCountText">0 items expiring today!</span>
+        <button class="action-btn" onclick="acknowledgeAlerts()" style="color: white;">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container" id="mainContainer" style="display: none;">
+        <!-- Header -->
+        <header>
+            <div class="logo">
+                <i class="fas fa-clock"></i>
+                <h1>Expiry Notification System</h1>
+            </div>
+            <div class="header-controls">
+                <div class="item-count">
+                    <i class="fas fa-box"></i> <span id="totalItems">0</span>
+                </div>
+                <button class="btn btn-info btn-sm" id="changePinBtn">
+                    <i class="fas fa-key"></i> Change PIN
+                </button>
+                <button class="btn btn-warning btn-sm" id="lockBtn">
+                    <i class="fas fa-lock"></i> Lock
+                </button>
+            </div>
+        </header>
+        
+        <!-- Navigation -->
+        <nav>
+            <button class="nav-btn active" data-section="expiring">
+                <i class="fas fa-exclamation-triangle"></i> Expiring Soon
+            </button>
+            <button class="nav-btn" data-section="expired">
+                <i class="fas fa-calendar-times"></i> Expired Items
+            </button>
+            <button class="nav-btn" data-section="add">
+                <i class="fas fa-plus-circle"></i> Add Product
+            </button>
+            <button class="nav-btn" data-section="all">
+                <i class="fas fa-list"></i> All Products
+            </button>
+            <button class="nav-btn" data-section="alerts">
+                <i class="fas fa-bell"></i> Alert Settings
+            </button>
+            <button class="nav-btn" data-section="instructions">
+                <i class="fas fa-info-circle"></i> Instructions
+            </button>
+        </nav>
+        
+        <!-- Main Content -->
+        <div class="content">
+            <!-- Expiring Soon Section -->
+            <section id="expiringSection" class="content-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-exclamation-triangle"></i> Items Expiring Soon (Next 10 Days)</h2>
+                    <div class="item-count">
+                        <i class="fas fa-clock"></i> <span id="expiringCount">0</span>
+                    </div>
+                </div>
+                <div id="expiringBubbles" class="bubble-container">
+                    <!-- Expiring items will appear here as colorful bubbles -->
+                </div>
+                <div id="noExpiringItems" class="empty-state" style="display: none;">
+                    <i class="fas fa-check-circle"></i>
+                    <h3>No Items Expiring Soon</h3>
+                    <p>All products are safely within their expiry dates.</p>
+                </div>
+            </section>
+            
+            <!-- Expired Items Section -->
+            <section id="expiredSection" class="content-section" style="display: none;">
+                <div class="section-header">
+                    <h2><i class="fas fa-calendar-times"></i> Expired Items</h2>
+                    <div class="item-count">
+                        <i class="fas fa-exclamation-circle"></i> <span id="expiredCount">0</span>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table class="product-table">
+                        <thead>
+                            <tr>
+                                <th>Barcode</th>
+                                <th>Description</th>
+                                <th>Qty</th>
+                                <th>Expiry Date</th>
+                                <th>Days Expired</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="expiredTableBody">
+                            <!-- Expired items will appear here -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="noExpiredItems" class="empty-state" style="display: none;">
+                    <i class="fas fa-check-circle"></i>
+                    <h3>No Expired Items</h3>
+                    <p>All products are within their expiry dates.</p>
+                </div>
+            </section>
+            
+            <!-- Add Product Section -->
+            <section id="addSection" class="content-section" style="display: none;">
+                <div class="section-header">
+                    <h2><i class="fas fa-plus-circle"></i> Add New Product</h2>
+                    <p>Scan or enter product details below</p>
+                </div>
+                <div class="add-form">
+                    <form id="addProductForm">
+                        <div class="form-group">
+                            <label for="barcode"><i class="fas fa-barcode"></i> Barcode</label>
+                            <input type="text" id="barcode" class="form-control" placeholder="Scan or enter barcode" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="description"><i class="fas fa-tag"></i> Product Description</label>
+                            <input type="text" id="description" class="form-control" placeholder="Enter product description" required>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="quantity"><i class="fas fa-cubes"></i> Quantity</label>
+                                <input type="number" id="quantity" class="form-control" min="1" value="1" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="expiryDate"><i class="fas fa-calendar-alt"></i> Expiry Date</label>
+                                <input type="date" id="expiryDate" class="form-control" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group" style="margin-top: 20px;">
+                            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 14px;">
+                                <i class="fas fa-save"></i> Save Product
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+            
+            <!-- All Products Section -->
+            <section id="allSection" class="content-section" style="display: none;">
+                <div class="section-header">
+                    <h2><i class="fas fa-list"></i> All Products</h2>
+                    <div class="item-count">
+                        <i class="fas fa-boxes"></i> <span id="allProductsCount">0</span>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table class="product-table">
+                        <thead>
+                            <tr>
+                                <th>Barcode</th>
+                                <th>Description</th>
+                                <th>Qty</th>
+                                <th>Expiry Date</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="allProductsTableBody">
+                            <!-- All products will appear here -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="noProducts" class="empty-state" style="display: none;">
+                    <i class="fas fa-box-open"></i>
+                    <h3>No Products Added Yet</h3>
+                    <p>Add your first product using the "Add Product" section.</p>
+                </div>
+            </section>
+            
+            <!-- Alert Settings Section -->
+            <section id="alertsSection" class="content-section" style="display: none;">
+                <div class="section-header">
+                    <h2><i class="fas fa-bell"></i> Alert Settings</h2>
+                    <div class="item-count">
+                        <i class="fas fa-cog"></i> Settings
+                    </div>
+                </div>
+                
+                <div class="alert-settings">
+                    <h3><i class="fas fa-clock"></i> Automatic Sound Alerts</h3>
+                    
+                    <div class="settings-row">
+                        <div>
+                            <strong>2-Hour Same-Day Alert</strong>
+                            <p style="font-size: 14px; color: #666; margin-top: 5px;">
+                                Automatically plays sound every 2 hours for items expiring today
+                            </p>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="autoAlertToggle" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="settings-row">
+                        <div>
+                            <strong>Alert Sound Volume</strong>
+                            <p style="font-size: 14px; color: #666; margin-top: 5px;">
+                                Adjust the volume of the alert sound
+                            </p>
+                        </div>
+                        <input type="range" id="alertVolume" min="0" max="100" value="70" style="width: 150px;">
+                    </div>
+                    
+                    <div style="margin-top: 20px; padding: 15px; background-color: #e8f4fd; border-radius: 8px;">
+                        <h4><i class="fas fa-info-circle"></i> How It Works:</h4>
+                        <ul style="margin-left: 20px; margin-top: 10px; font-size: 14px;">
+                            <li>System checks for same-day expiry items every 2 hours</li>
+                            <li>Plays alert sound if items found (unless acknowledged)</li>
+                            <li>Sound plays from internet (no local files needed)</li>
+                            <li>Click the bell icon in top-right to acknowledge alerts</li>
+                            <li>Next alert in: <span id="nextAlertTime">Calculating...</span></li>
+                        </ul>
+                    </div>
+                    
+                    <div style="margin-top: 20px;">
+                        <button class="btn btn-primary" id="testAlertBtn">
+                            <i class="fas fa-volume-up"></i> Test Alert Sound
+                        </button>
+                        <button class="btn btn-success" id="acknowledgeAllBtn" style="margin-left: 10px;">
+                            <i class="fas fa-check-circle"></i> Acknowledge All Alerts
+                        </button>
+                    </div>
+                    
+                    <div style="margin-top: 25px; padding-top: 15px; border-top: 2px solid #eee;">
+                        <h4><i class="fas fa-history"></i> Alert History</h4>
+                        <div id="alertHistory" style="margin-top: 10px; max-height: 200px; overflow-y: auto;">
+                            <!-- Alert history will appear here -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Instructions Section -->
+            <section id="instructionsSection" class="content-section" style="display: none;">
+                <div class="section-header">
+                    <h2><i class="fas fa-info-circle"></i> System Instructions</h2>
+                </div>
+                
+                <div style="max-width: 800px; margin: 0 auto;">
+                    <div style="background-color: #f9f9f9; padding: 20px; border-radius: 12px; margin-bottom: 15px;">
+                        <h3 style="color: var(--primary-color); margin-bottom: 12px; font-size: 18px;">1. PIN Protection</h3>
+                        <p>The system is secured with your personal PIN.</p>
+                        <ul style="margin-left: 20px; margin-top: 10px; font-size: 14px;">
+                            <li>Set your PIN on first access only</li>
+                            <li>The PIN is never displayed anywhere in the system</li>
+                            <li>Change PIN anytime using the "Change PIN" button</li>
+                            <li>Any attempt to remove expired items will prompt for the PIN for security</li>
+                        </ul>
+                    </div>
+                    
+                    <div style="background-color: #f9f9f9; padding: 20px; border-radius: 12px; margin-bottom: 15px;">
+                        <h3 style="color: var(--primary-color); margin-bottom: 12px; font-size: 18px;">2. Adding Products</h3>
+                        <ul style="margin-left: 20px; font-size: 14px;">
+                            <li>Scan or enter the barcode, then enter quantity, description, and expiry date</li>
+                            <li>After entering all details, press the Save Product button to store the item</li>
+                            <li>A sound alert confirms that the product has been saved successfully</li>
+                        </ul>
+                    </div>
+                    
+                    <div style="background-color: #f9f9f9; padding: 20px; border-radius: 12px; margin-bottom: 15px;">
+                        <h3 style="color: var(--primary-color); margin-bottom: 12px; font-size: 18px;">3. Automatic Sound Alerts (NEW!)</h3>
+                        <ul style="margin-left: 20px; font-size: 14px;">
+                            <li>System automatically checks for same-day expiry items every 2 hours</li>
+                            <li>Plays alert sound from internet if items found</li>
+                            <li>Click the bell icon in top-right to acknowledge alerts</li>
+                            <li>Configure alerts in "Alert Settings" section</li>
+                            <li>Alerts help ensure no same-day expiry items are missed</li>
+                        </ul>
+                    </div>
+                    
+                    <div style="background-color: #f9f9f9; padding: 20px; border-radius: 12px; margin-bottom: 15px;">
+                        <h3 style="color: var(--primary-color); margin-bottom: 12px; font-size: 18px;">4. Main Display – Expiring Items</h3>
+                        <ul style="margin-left: 20px; font-size: 14px;">
+                            <li>The main page automatically displays items expiring within the last 10 days</li>
+                            <li>Each expiring product appears in a large, colorful bubble for easy visibility</li>
+                            <li>The bubble includes barcode, quantity, description, and expiry date</li>
+                            <li>This allows staff to immediately identify items that need attention</li>
+                        </ul>
+                    </div>
+                    
+                    <div style="background-color: #f9f9f9; padding: 20px; border-radius: 12px; margin-bottom: 15px;">
+                        <h3 style="color: var(--primary-color); margin-bottom: 12px; font-size: 18px;">5. Expired Items</h3>
+                        <ul style="margin-left: 20px; font-size: 14px;">
+                            <li>Expired items are automatically moved to the Expired Items section</li>
+                            <li>Users can view all expired items in a separate list</li>
+                            <li>To remove any expired item, the system will ask for the PIN to ensure authorized access</li>
+                        </ul>
+                    </div>
+                    
+                    <div style="background-color: #f9f9f9; padding: 20px; border-radius: 12px;">
+                        <h3 style="color: var(--primary-color); margin-bottom: 12px; font-size: 18px;">Usage Benefits</h3>
+                        <ul style="margin-left: 20px; font-size: 14px;">
+                            <li>Ensures no expired items are overlooked</li>
+                            <li>Automatic alerts for same-day expiry items</li>
+                            <li>Helps manage inventory efficiently</li>
+                            <li>Provides clear, visual cues for staff to act quickly</li>
+                            <li>Secure system prevents unauthorized deletion or changes</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+        </div>
+        
+        <!-- Footer -->
+        <footer>
+            <p>Expiry Notification System &copy; <span id="currentYear"></span> | Secure Inventory Management</p>
+            <p style="margin-top: 5px; font-size: 13px; opacity: 0.8;">Mobile-friendly with automatic sound alerts</p>
+            <div class="signature">
+                Nasrullah💔Shandana<br>
+                <small>I live through you; if I fall, your soul falls with me</small>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Alert Sound (hidden) -->
+    <audio id="saveSound" class="alert-sound">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-correct-answer-tone-2870.mp3" type="audio/mpeg">
+    </audio>
+    
+    <audio id="deleteSound" class="alert-sound">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-trash-falling-into-a-bin-389.mp3" type="audio/mpeg">
+    </audio>
+    
+    <audio id="alertSound" class="alert-sound">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-alarm-digital-clock-beep-989.mp3" type="audio/mpeg">
+    </audio>
+<script>
+        // User PIN and products
+        let userPin = null;
+        let isUnlocked = false;
+        let products = [];
+        let currentDeletingId = null;
+        let isDeletingExpired = false;
+        
+        // Alert system variables
+        let alertCheckInterval = null;
+        let autoAlertsEnabled = true;
+        let alertVolume = 0.7;
+        let acknowledgedAlerts = [];
+        let alertHistory = [];
+        
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set current year in footer
+            document.getElementById('currentYear').textContent = new Date().getFullYear();
+            
+            // Set expiry date to 30 days from now as default
+            const today = new Date();
+            const nextMonth = new Date(today);
+            nextMonth.setDate(today.getDate() + 30);
+            document.getElementById('expiryDate').valueAsDate = nextMonth;
+            
+            // Check if user has already set a PIN
+            const storedPin = localStorage.getItem('expirySystemUserPin');
+            
+            if (storedPin) {
+                // User has already set a PIN - auto unlock
+                userPin = storedPin;
+                unlockSystem();
+            } else {
+                // First time user - show first-time PIN setup modal
+                document.getElementById('firstTimePinModal').style.display = 'flex';
+                setupFirstTimePinInputs();
+            }
+            
+            // Load products from local storage
+            loadProducts();
+            
+            // Load alert settings
+            loadAlertSettings();
+            
+            // Event listeners
+            document.getElementById('setPinSubmit').addEventListener('click', setFirstTimePin);
+            document.getElementById('lockBtn').addEventListener('click', lockSystem);
+            document.getElementById('changePinBtn').addEventListener('click', showChangePinModal);
+            document.getElementById('saveNewPin').addEventListener('click', changePin);
+            document.getElementById('cancelChangePin').addEventListener('click', closeChangePinModal);
+            document.getElementById('addProductForm').addEventListener('submit', addProduct);
+            
+            // Alert settings listeners
+            document.getElementById('autoAlertToggle').addEventListener('change', toggleAutoAlerts);
+            document.getElementById('alertVolume').addEventListener('input', updateAlertVolume);
+            document.getElementById('testAlertBtn').addEventListener('click', testAlertSound);
+            document.getElementById('acknowledgeAllBtn').addEventListener('click', acknowledgeAlerts);
+            
+            // Delete modal event listeners
+            document.getElementById('confirmDelete').addEventListener('click', confirmDeleteProduct);
+            document.getElementById('cancelDelete').addEventListener('click', closeDeleteModal);
+            
+            // PIN input handling for delete modal
+            setupDeletePinInputs();
+            
+            // Navigation buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    // Update active button
+                    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Show corresponding section
+                    const section = this.getAttribute('data-section');
+                    showSection(section);
+                    
+                    // If showing alerts section, update next alert time
+                    if (section === 'alerts') {
+                        updateNextAlertTime();
+                        updateAlertHistory();
+                    }
+                });
+            });
+            
+            // Enter key for PIN submission
+            document.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    // Check which modal is open
+                    if (document.getElementById('firstTimePinModal').style.display === 'flex') {
+                        setFirstTimePin();
+                    } else if (document.getElementById('changePinModal').style.display === 'flex') {
+                        changePin();
+                    } else if (document.getElementById('deleteModal').style.display === 'flex') {
+                        const pinVerifySection = document.getElementById('pinVerifySection');
+                        if (pinVerifySection.style.display !== 'none') {
+                            confirmDeleteProduct();
+                        }
+                    }
+                }
+            });
+            
+            // Initialize alert system
+            initializeAlertSystem();
+        });
+        
+        // Initialize alert system
+        function initializeAlertSystem() {
+            // Load acknowledged alerts
+            const storedAcknowledged = localStorage.getItem('expirySystemAcknowledgedAlerts');
+            if (storedAcknowledged) {
+                acknowledgedAlerts = JSON.parse(storedAcknowledged);
+            }
+            
+            // Load alert history
+            const storedHistory = localStorage.getItem('expirySystemAlertHistory');
+            if (storedHistory) {
+                alertHistory = JSON.parse(storedHistory);
+            }
+            
+            // Check for same-day expiry items immediately
+            checkSameDayExpiry();
+            
+            // Start 2-hour check interval (7200000 ms = 2 hours)
+            alertCheckInterval = setInterval(checkSameDayExpiry, 7200000);
+            
+            // Update next alert time display
+            updateNextAlertTime();
+        }
+        
+        // Load alert settings
+        function loadAlertSettings() {
+            const storedAutoAlerts = localStorage.getItem('expirySystemAutoAlerts');
+            if (storedAutoAlerts !== null) {
+                autoAlertsEnabled = storedAutoAlerts === 'true';
+                document.getElementById('autoAlertToggle').checked = autoAlertsEnabled;
+            }
+            
+            const storedVolume = localStorage.getItem('expirySystemAlertVolume');
+            if (storedVolume !== null) {
+                alertVolume = parseInt(storedVolume) / 100;
+                document.getElementById('alertVolume').value = storedVolume;
+            }
+        }
+        
+        // Save alert settings
+        function saveAlertSettings() {
+            localStorage.setItem('expirySystemAutoAlerts', autoAlertsEnabled);
+            localStorage.setItem('expirySystemAlertVolume', (alertVolume * 100).toString());
+        }
+        
+        // Toggle auto alerts
+        function toggleAutoAlerts() {
+            autoAlertsEnabled = document.getElementById('autoAlertToggle').checked;
+            saveAlertSettings();
+            
+            if (autoAlertsEnabled) {
+                showToast('Automatic alerts enabled', 'success');
+                // Restart alert check
+                clearInterval(alertCheckInterval);
+                alertCheckInterval = setInterval(checkSameDayExpiry, 7200000);
+                updateNextAlertTime();
+            } else {
+                showToast('Automatic alerts disabled', 'warning');
+                // Clear existing alerts indicator
+                document.getElementById('soundAlertIndicator').style.display = 'none';
+            }
+        }
+        
+        // Update alert volume
+        function updateAlertVolume() {
+            alertVolume = document.getElementById('alertVolume').value / 100;
+            saveAlertSettings();
+        }
+        
+        // Test alert sound
+        function testAlertSound() {
+            const alertSound = document.getElementById('alertSound');
+            alertSound.volume = alertVolume;
+            alertSound.play().catch(e => console.log("Audio play failed:", e));
+            showToast('Test alert sound played', 'info');
+            
+            // Add to history
+            addAlertHistory('Test alert', 'info');
+        }
+        
+        // Check for same-day expiry items
+        function checkSameDayExpiry() {
+            if (!autoAlertsEnabled || !isUnlocked) return;
+            
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            // Check if we've already shown alert today
+            const todayStr = today.toISOString().split('T')[0];
+            if (acknowledgedAlerts.includes(todayStr)) {
+                return; // Already acknowledged today
+            }
+            
+            // Find items expiring today
+            const sameDayItems = products.filter(product => {
+                const expiryDate = new Date(product.expiryDate);
+                expiryDate.setHours(0, 0, 0, 0);
+                return expiryDate.getTime() === today.getTime();
+            });
+            
+            if (sameDayItems.length > 0) {
+                // Play alert sound
+                const alertSound = document.getElementById('alertSound');
+                alertSound.volume = alertVolume;
+                alertSound.play().catch(e => console.log("Audio play failed:", e));
+                
+                // Show alert indicator
+                showAlertIndicator(sameDayItems.length);
+                
+                // Add to history
+                addAlertHistory(`${sameDayItems.length} items expiring today`, 'warning');
+                
+                // Show toast notification
+                showToast(`${sameDayItems.length} item(s) expiring today!`, 'warning');
+            }
+            
+            // Update next alert time
+            updateNextAlertTime();
+        }
+        
+        // Show alert indicator
+        function showAlertIndicator(count) {
+            const indicator = document.getElementById('soundAlertIndicator');
+            const alertCountText = document.getElementById('alertCountText');
+            
+            alertCountText.textContent = `${count} item${count !== 1 ? 's' : ''} expiring today!`;
+            indicator.style.display = 'flex';
+            
+            // Add alert count badge
+            let alertCount = indicator.querySelector('.alert-count');
+            if (!alertCount) {
+                alertCount = document.createElement('div');
+                alertCount.className = 'alert-count';
+                indicator.appendChild(alertCount);
+            }
+            alertCount.textContent = count;
+        }
+        
+        // Acknowledge alerts
+        function acknowledgeAlerts() {
+            const today = new Date();
+            const todayStr = today.toISOString().split('T')[0];
+            
+            if (!acknowledgedAlerts.includes(todayStr)) {
+                acknowledgedAlerts.push(todayStr);
+                localStorage.setItem('expirySystemAcknowledgedAlerts', JSON.stringify(acknowledgedAlerts));
+            }
+            
+            // Hide alert indicator
+            document.getElementById('soundAlertIndicator').style.display = 'none';
+            
+            // Add to history
+            addAlertHistory('Alerts acknowledged', 'success');
+            
+            showToast('Alerts acknowledged for today', 'success');
+        }
+        
+        // Add to alert history
+        function addAlertHistory(message, type = 'info') {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            const dateStr = now.toLocaleDateString();
+            
+            const historyEntry = {
+                id: Date.now(),
+                message: message,
+                type: type,
+                time: timeStr,
+                date: dateStr,
+                timestamp: now.toISOString()
+            };
+            
+            alertHistory.unshift(historyEntry); // Add to beginning
+            if (alertHistory.length > 10) {
+                alertHistory = alertHistory.slice(0, 10); // Keep only last 10 entries
+            }
+            
+            localStorage.setItem('expirySystemAlertHistory', JSON.stringify(alertHistory));
+            
+            // Update display if on alerts section
+            if (document.getElementById('alertsSection').style.display !== 'none') {
+                updateAlertHistory();
+            }
+        }
+        
+        // Update alert history display
+        function updateAlertHistory() {
+            const historyContainer = document.getElementById('alertHistory');
+            historyContainer.innerHTML = '';
+            
+            if (alertHistory.length === 0) {
+                historyContainer.innerHTML = '<p style="color: #666; text-align: center; padding: 20px;">No alert history yet</p>';
+                return;
+            }
+            
+            alertHistory.forEach(entry => {
+                const historyItem = document.createElement('div');
+                historyItem.style.padding = '10px';
+                historyItem.style.borderBottom = '1px solid #eee';
+                historyItem.style.display = 'flex';
+                historyItem.style.justifyContent = 'space-between';
+                historyItem.style.alignItems = 'center';
+                
+                let icon = 'info-circle';
+                let color = '#3498db';
+                if (entry.type === 'warning') {
+                    icon = 'exclamation-triangle';
+                    color = '#f39c12';
+                } else if (entry.type === 'success') {
+                    icon = 'check-circle';
+                    color = '#27ae60';
+                } else if (entry.type === 'error') {
+                    icon = 'times-circle';
+                    color = '#e74c3c';
+                }
+                
+                historyItem.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-${icon}" style="color: ${color};"></i>
+                        <span>${entry.message}</span>
+                    </div>
+                    <div style="font-size: 12px; color: #666;">
+                        ${entry.date} ${entry.time}
+                    </div>
+                `;
+                
+                historyContainer.appendChild(historyItem);
+            });
+        }
+        
+        // Update next alert time display
+        function updateNextAlertTime() {
+            if (!autoAlertsEnabled) {
+                document.getElementById('nextAlertTime').textContent = 'Alerts disabled';
+                return;
+            }
+            
+            const now = new Date();
+            const nextCheck = new Date(now.getTime() + 7200000); // 2 hours from now
+            
+            // Format time
+            const hours = nextCheck.getHours().toString().padStart(2, '0');
+            const minutes = nextCheck.getMinutes().toString().padStart(2, '0');
+            
+            document.getElementById('nextAlertTime').textContent = `${hours}:${minutes}`;
+        }
+        
+        // Set up first-time PIN inputs
+        function setupFirstTimePinInputs() {
+            const pin1 = document.getElementById('firstPin1');
+            const pin2 = document.getElementById('firstPin2');
+            const pin3 = document.getElementById('firstPin3');
+            const pin4 = document.getElementById('firstPin4');
+            
+            const confirm1 = document.getElementById('confirmPin1');
+            const confirm2 = document.getElementById('confirmPin2');
+            const confirm3 = document.getElementById('confirmPin3');
+            const confirm4 = document.getElementById('confirmPin4');
+            
+            const pins = [pin1, pin2, pin3, pin4];
+            const confirms = [confirm1, confirm2, confirm3, confirm4];
+            
+            pins.forEach((input, index) => {
+                input.addEventListener('input', () => {
+                    if (input.value.length === 1 && index < pins.length - 1) {
+                        pins[index + 1].focus();
+                    }
+                });
+                
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Backspace' && input.value.length === 0 && index > 0) {
+                        pins[index - 1].focus();
+                    }
+                });
+            });
+            
+            confirms.forEach((input, index) => {
+                input.addEventListener('input', () => {
+                    if (input.value.length === 1 && index < confirms.length - 1) {
+                        confirms[index + 1].focus();
+                    }
+                });
+                
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Backspace' && input.value.length === 0 && index > 0) {
+                        confirms[index - 1].focus();
+                    }
+                });
+            });
+            
+            // Focus first input
+            pin1.focus();
+        }
+        
+        // Set first-time PIN
+        function setFirstTimePin() {
+            const pin1 = document.getElementById('firstPin1').value;
+            const pin2 = document.getElementById('firstPin2').value;
+            const pin3 = document.getElementById('firstPin3').value;
+            const pin4 = document.getElementById('firstPin4').value;
+            
+            const confirm1 = document.getElementById('confirmPin1').value;
+            const confirm2 = document.getElementById('confirmPin2').value;
+            const confirm3 = document.getElementById('confirmPin3').value;
+            const confirm4 = document.getElementById('confirmPin4').value;
+            
+            const newPin = pin1 + pin2 + pin3 + pin4;
+            const confirmPin = confirm1 + confirm2 + confirm3 + confirm4;
+            
+            if (newPin.length !== 4) {
+                document.getElementById('firstPinError').textContent = 'PIN must be 4 digits';
+                return;
+            }
+            
+            if (!/^\d+$/.test(newPin)) {
+                document.getElementById('firstPinError').textContent = 'PIN must contain only numbers';
+                return;
+            }
+            
+            if (newPin !== confirmPin) {
+                document.getElementById('firstPinError').textContent = 'PINs do not match';
+                return;
+            }
+            
+            // Save PIN
+            userPin = newPin;
+            localStorage.setItem('expirySystemUserPin', newPin);
+            
+            // Hide first-time modal and unlock system
+            document.getElementById('firstPinError').textContent = '';
+            document.getElementById('firstTimePinModal').style.display = 'none';
+            unlockSystem();
+            
+            // Show success toast
+            showToast('PIN set successfully!', 'success');
+        }
+        
+        // Show change PIN modal
+        function showChangePinModal() {
+            document.getElementById('changePinModal').style.display = 'flex';
+            
+            // Clear all inputs
+            for (let i = 1; i <= 4; i++) {
+                document.getElementById('currentPin' + i).value = '';
+                document.getElementById('newPin' + i).value = '';
+                document.getElementById('confirmNewPin' + i).value = '';
+            }
+            
+            document.getElementById('currentPin1').focus();
+            document.getElementById('changePinError').textContent = '';
+            
+            // Set up auto-focus for change PIN inputs
+            setupChangePinInputs();
+        }
+        
+        // Set up change PIN inputs
+        function setupChangePinInputs() {
+            const currentPins = [
+                document.getElementById('currentPin1'),
+                document.getElementById('currentPin2'),
+                document.getElementById('currentPin3'),
+                document.getElementById('currentPin4')
+            ];
+            
+            const newPins = [
+                document.getElementById('newPin1'),
+                document.getElementById('newPin2'),
+                document.getElementById('newPin3'),
+                document.getElementById('newPin4')
+            ];
+            
+            const confirmNewPins = [
+                document.getElementById('confirmNewPin1'),
+                document.getElementById('confirmNewPin2'),
+                document.getElementById('confirmNewPin3'),
+                document.getElementById('confirmNewPin4')
+            ];
+            
+            // Set up current PIN inputs
+            currentPins.forEach((input, index) => {
+                input.addEventListener('input', () => {
+                    if (input.value.length === 1 && index < currentPins.length - 1) {
+                        currentPins[index + 1].focus();
+                    }
+                });
+            });
+            
+            // Set up new PIN inputs
+            newPins.forEach((input, index) => {
+                input.addEventListener('input', () => {
+                    if (input.value.length === 1 && index < newPins.length - 1) {
+                        newPins[index + 1].focus();
+                    }
+                });
+            });
+            
+            // Set up confirm new PIN inputs
+            confirmNewPins.forEach((input, index) => {
+                input.addEventListener('input', () => {
+                    if (input.value.length === 1 && index < confirmNewPins.length - 1) {
+                        confirmNewPins[index + 1].focus();
+                    }
+                });
+            });
+        }
+        
+        // Change PIN
+        function changePin() {
+            const current1 = document.getElementById('currentPin1').value;
+            const current2 = document.getElementById('currentPin2').value;
+            const current3 = document.getElementById('currentPin3').value;
+            const current4 = document.getElementById('currentPin4').value;
+            
+            const new1 = document.getElementById('newPin1').value;
+            const new2 = document.getElementById('newPin2').value;
+            const new3 = document.getElementById('newPin3').value;
+            const new4 = document.getElementById('newPin4').value;
+            
+            const confirm1 = document.getElementById('confirmNewPin1').value;
+            const confirm2 = document.getElementById('confirmNewPin2').value;
+            const confirm3 = document.getElementById('confirmNewPin3').value;
+            const confirm4 = document.getElementById('confirmNewPin4').value;
+            
+            const currentPin = current1 + current2 + current3 + current4;
+            const newPin = new1 + new2 + new3 + new4;
+            const confirmPin = confirm1 + confirm2 + confirm3 + confirm4;
+            
+            if (currentPin !== userPin) {
+                document.getElementById('changePinError').textContent = 'Current PIN is incorrect';
+                return;
+            }
+            
+            if (newPin.length !== 4) {
+                document.getElementById('changePinError').textContent = 'New PIN must be 4 digits';
+                return;
+            }
+            
+            if (!/^\d+$/.test(newPin)) {
+                document.getElementById('changePinError').textContent = 'PIN must contain only numbers';
+                return;
+            }
+            
+            if (newPin !== confirmPin) {
+                document.getElementById('changePinError').textContent = 'New PINs do not match';
+                return;
+            }
+            
+            // Update PIN
+            userPin = newPin;
+            localStorage.setItem('expirySystemUserPin', newPin);
+            
+            // Close modal and show success message
+            closeChangePinModal();
+            showToast('PIN changed successfully!', 'success');
+        }
+        
+        // Close change PIN modal
+        function closeChangePinModal() {
+            document.getElementById('changePinModal').style.display = 'none';
+        }
+        
+        // Unlock the system
+        function unlockSystem() {
+            isUnlocked = true;
+            document.getElementById('mainContainer').style.display = 'block';
+            updateDisplay();
+            
+            // Initialize alert system
+            initializeAlertSystem();
+        }
+        
+        // Lock the system
+        function lockSystem() {
+            isUnlocked = false;
+            document.getElementById('mainContainer').style.display = 'none';
+            document.getElementById('firstTimePinModal').style.display = 'none';
+            document.getElementById('changePinModal').style.display = 'none';
+            
+            // Clear alert interval
+            clearInterval(alertCheckInterval);
+            
+            // Show first-time PIN modal (but it's already set, so user needs to enter PIN)
+            const pinModalHTML = `
+                <div class="pin-modal" id="tempPinModal" style="display: flex;">
+                    <div class="pin-container">
+                        <i class="fas fa-lock" style="font-size: 42px; color: #3498db; margin-bottom: 15px;"></i>
+                        <h2>System Locked</h2>
+                        <p>Enter your PIN to unlock the system</p>
+                        <div class="pin-input">
+                            <input type="password" maxlength="1" id="tempPin1" autofocus>
+                            <input type="password" maxlength="1" id="tempPin2">
+                            <input type="password" maxlength="1" id="tempPin3">
+                            <input type="password" maxlength="1" id="tempPin4">
+                        </div>
+                        <div class="pin-error" id="tempPinError"></div>
+                        <button class="btn btn-primary" id="tempPinSubmit" style="margin-top: 10px; width: 100%;">
+                            <i class="fas fa-unlock-alt"></i> Unlock System
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            // Remove existing temp modal if any
+            const existingModal = document.getElementById('tempPinModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+            
+            // Add new modal
+            document.body.insertAdjacentHTML('beforeend', pinModalHTML);
+            
+            // Set up event listeners
+            const modal = document.getElementById('tempPinModal');
+            const pinInputs = modal.querySelectorAll('.pin-input input');
+            
+            pinInputs.forEach((input, index) => {
+                input.addEventListener('input', () => {
+                    if (input.value.length === 1 && index < pinInputs.length - 1) {
+                        pinInputs[index + 1].focus();
+                    }
+                });
+            });
+            
+            modal.querySelector('#tempPinSubmit').addEventListener('click', function() {
+                const pin1 = document.getElementById('tempPin1').value;
+                const pin2 = document.getElementById('tempPin2').value;
+                const pin3 = document.getElementById('tempPin3').value;
+                const pin4 = document.getElementById('tempPin4').value;
+                
+                const enteredPin = pin1 + pin2 + pin3 + pin4;
+                
+                if (enteredPin === userPin) {
+                    modal.remove();
+                    unlockSystem();
+                } else {
+                    document.getElementById('tempPinError').textContent = 'Incorrect PIN';
+                    pinInputs.forEach(input => input.value = '');
+                    document.getElementById('tempPin1').focus();
+                }
+            });
+        }
+        
+        // Show the selected section
+        function showSection(sectionId) {
+            // Hide all sections
+            document.querySelectorAll('.content-section').forEach(section => {
+                section.style.display = 'none';
+            });
+            
+            // Show the selected section
+            document.getElementById(sectionId + 'Section').style.display = 'block';
+            
+            // Update the display for the selected section
+            if (sectionId === 'expiring') {
+                updateExpiringDisplay();
+            } else if (sectionId === 'expired') {
+                updateExpiredDisplay();
+            } else if (sectionId === 'all') {
+                updateAllProductsDisplay();
+            } else if (sectionId === 'alerts') {
+                updateNextAlertTime();
+                updateAlertHistory();
+            }
+        }
+        
+        // Load products from local storage
+        function loadProducts() {
+            const storedProducts = localStorage.getItem('expirySystemProducts');
+            if (storedProducts) {
+                products = JSON.parse(storedProducts);
+            } else {
+                // Add sample beverage products
+                const today = new Date();
+                const sampleProducts = [
+                    {
+                        id: 1,
+                        barcode: "012000123456",
+                        description: "Pepsi 2L Bottle",
+                        quantity: 24,
+                        expiryDate: new Date(today.getTime() + 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                        addedDate: new Date().toISOString()
+                    },
+                    {
+                        id: 2,
+                        barcode: "049000028904",
+                        description: "Coca-Cola 1.5L",
+                        quantity: 18,
+                        expiryDate: new Date(today.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                        addedDate: new Date().toISOString()
+                    },
+                    {
+                        id: 3,
+                        barcode: "012000654321",
+                        description: "Pepsi Max 500ml",
+                        quantity: 36,
+                        expiryDate: new Date(today.getTime() + 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                        addedDate: new Date().toISOString()
+                    },
+                    {
+                        id: 4,
+                        barcode: "049000011111",
+                        description: "Sprite 330ml Can",
+                        quantity: 48,
+                        expiryDate: new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                        addedDate: new Date().toISOString()
+                    }
+                ];
+                products = sampleProducts;
+                saveProducts();
+            }
+        }
+        
+        // Save products to local storage
+        function saveProducts() {
+            localStorage.setItem('expirySystemProducts', JSON.stringify(products));
+        }
+        
+        // Add a new product
+        function addProduct(e) {
+            e.preventDefault();
+            
+            // Get form values
+            const barcode = document.getElementById('barcode').value.trim();
+            const description = document.getElementById('description').value.trim();
+            const quantity = parseInt(document.getElementById('quantity').value);
+            const expiryDate = document.getElementById('expiryDate').value;
+            
+            if (!barcode || !description || !expiryDate) {
+                showToast('Please fill all required fields', 'error');
+                return;
+            }
+            
+            if (quantity < 1) {
+                showToast('Quantity must be at least 1', 'error');
+                return;
+            }
+            
+            // Generate ID
+            const id = products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1;
+            
+            // Add product
+            const newProduct = {
+                id,
+                barcode,
+                description,
+                quantity,
+                expiryDate,
+                addedDate: new Date().toISOString()
+            };
+            
+            products.push(newProduct);
+            saveProducts();
+            
+            // Play success sound
+            document.getElementById('saveSound').play();
+            
+            // Show visual feedback
+            const saveButton = document.querySelector('#addProductForm button[type="submit"]');
+            saveButton.classList.add('saved-effect');
+            setTimeout(() => {
+                saveButton.classList.remove('saved-effect');
+            }, 500);
+            
+            // Clear form
+            document.getElementById('addProductForm').reset();
+            
+            // Set expiry date to 30 days from now as default
+            const today = new Date();
+            const nextMonth = new Date(today);
+            nextMonth.setDate(today.getDate() + 30);
+            document.getElementById('expiryDate').valueAsDate = nextMonth;
+            
+            // Update display
+            updateDisplay();
+            
+            // Check if this item expires today
+            const todayStr = today.toISOString().split('T')[0];
+            if (expiryDate === todayStr) {
+                // Add to alert history
+                addAlertHistory(`New product "${description}" expires today`, 'warning');
+                
+                // Show immediate alert
+                if (autoAlertsEnabled && !acknowledgedAlerts.includes(todayStr)) {
+                    setTimeout(() => {
+                        const alertSound = document.getElementById('alertSound');
+                        alertSound.volume = alertVolume;
+                        alertSound.play().catch(e => console.log("Audio play failed:", e));
+                        showAlertIndicator(1);
+                    }, 1000);
+                }
+            }
+            
+            // Show success toast
+            showToast('Product added successfully!', 'success');
+            
+            // Switch to expiring items view
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            document.querySelector('.nav-btn[data-section="expiring"]').classList.add('active');
+            showSection('expiring');
+        }
+        
+        // Show delete confirmation modal
+        function showDeleteModal(id, isExpired = false) {
+            currentDeletingId = id;
+            isDeletingExpired = isExpired;
+            
+            const product = products.find(p => p.id === id);
+            if (!product) return;
+            
+            const message = isExpired 
+                ? `Remove expired product: ${product.description}?` 
+                : `Remove product: ${product.description}?`;
+            
+            document.getElementById('deleteMessage').textContent = message;
+            document.getElementById('pinVerifySection').style.display = isExpired ? 'flex' : 'none';
+            document.getElementById('deletePinError').textContent = '';
+            
+            // Clear PIN inputs
+            for (let i = 1; i <= 4; i++) {
+                document.getElementById('deletePin' + i).value = '';
+            }
+            
+            document.getElementById('deleteModal').style.display = 'flex';
+            
+            // Focus first PIN input if needed
+            if (isExpired) {
+                document.getElementById('deletePin1').focus();
+            }
+        }
+        
+        // Set up delete PIN inputs
+        function setupDeletePinInputs() {
+            const deletePins = [
+                document.getElementById('deletePin1'),
+                document.getElementById('deletePin2'),
+                document.getElementById('deletePin3'),
+                document.getElementById('deletePin4')
+            ];
+            
+            deletePins.forEach((input, index) => {
+                input.addEventListener('input', () => {
+                    if (input.value.length === 1 && index < deletePins.length - 1) {
+                        deletePins[index + 1].focus();
+                    }
+                });
+            });
+        }
+        
+        // Confirm delete product
+        function confirmDeleteProduct() {
+            if (isDeletingExpired) {
+                // Verify PIN for expired items
+                const pin1 = document.getElementById('deletePin1').value;
+                const pin2 = document.getElementById('deletePin2').value;
+                const pin3 = document.getElementById('deletePin3').value;
+                const pin4 = document.getElementById('deletePin4').value;
+                
+                const enteredPin = pin1 + pin2 + pin3 + pin4;
+                
+                if (enteredPin !== userPin) {
+                    document.getElementById('deletePinError').textContent = 'Incorrect PIN';
+                    // Clear PIN inputs
+                    for (let i = 1; i <= 4; i++) {
+                        document.getElementById('deletePin' + i).value = '';
+                    }
+                    document.getElementById('deletePin1').focus();
+                    return;
+                }
+            }
+            
+            // Find and remove the product
+            const index = products.findIndex(p => p.id === currentDeletingId);
+            if (index !== -1) {
+                const productDescription = products[index].description;
+                products.splice(index, 1);
+                saveProducts();
+                updateDisplay();
+                
+                // Play delete sound
+                document.getElementById('deleteSound').play();
+                
+                // Close modal
+                closeDeleteModal();
+                
+                // Add to alert history
+                addAlertHistory(`Product "${productDescription}" deleted`, 'info');
+                
+                // Show success toast
+                showToast(`Product "${productDescription}" removed`, 'success');
+            }
+        }
+        
+        // Close delete modal
+        function closeDeleteModal() {
+            document.getElementById('deleteModal').style.display = 'none';
+            currentDeletingId = null;
+            isDeletingExpired = false;
+        }
+        
+        // Update all displays
+        function updateDisplay() {
+            updateTotalCount();
+            updateExpiringDisplay();
+            updateExpiredDisplay();
+            updateAllProductsDisplay();
+        }
+        
+        // Update total item count
+        function updateTotalCount() {
+            document.getElementById('totalItems').textContent = products.length;
+            document.getElementById('allProductsCount').textContent = products.length;
+        }
+        
+        // Update expiring items display
+        function updateExpiringDisplay() {
+            const expiringContainer = document.getElementById('expiringBubbles');
+            const noExpiringItems = document.getElementById('noExpiringItems');
+            
+            // Clear current display
+            expiringContainer.innerHTML = '';
+            
+            // Calculate date range (next 10 days)
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const tenDaysFromNow = new Date(today);
+            tenDaysFromNow.setDate(today.getDate() + 10);
+            
+            // Filter products expiring in the next 10 days (but not expired)
+            const expiringProducts = products.filter(product => {
+                const expiryDate = new Date(product.expiryDate);
+                expiryDate.setHours(0, 0, 0, 0);
+                return expiryDate >= today && expiryDate <= tenDaysFromNow;
+            });
+            
+            // Sort by days left (closest first)
+            expiringProducts.sort((a, b) => {
+                const aDate = new Date(a.expiryDate);
+                const bDate = new Date(b.expiryDate);
+                return aDate - bDate;
+            });
+            
+            // Update count
+            document.getElementById('expiringCount').textContent = expiringProducts.length;
+            
+            if (expiringProducts.length === 0) {
+                noExpiringItems.style.display = 'block';
+                return;
+            }
+            
+            noExpiringItems.style.display = 'none';
+            
+            // Create bubble for each expiring product
+            expiringProducts.forEach(product => {
+                const expiryDate = new Date(product.expiryDate);
+                expiryDate.setHours(0, 0, 0, 0);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const timeDiff = expiryDate.getTime() - today.getTime();
+                const daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24));
+                
+                // Determine bubble color based on days left
+                let bubbleColor;
+                if (daysLeft <= 0) {
+                    bubbleColor = '#e74c3c'; // Red for expired (shouldn't happen here)
+                } else if (daysLeft <= 3) {
+                    bubbleColor = '#e74c3c'; // Red for urgent
+                } else if (daysLeft <= 7) {
+                    bubbleColor = '#f39c12'; // Orange for warning
+                } else {
+                    bubbleColor = '#2ecc71'; // Green for soon
+                }
+                
+                const bubble = document.createElement('div');
+                bubble.className = 'expiry-bubble';
+                bubble.style.backgroundColor = bubbleColor;
+                bubble.innerHTML = `
+                    <div class="bubble-header">
+                        <div class="barcode">${product.barcode}</div>
+                        <div class="expiry-date">${formatDate(expiryDate)}</div>
+                    </div>
+                    <div class="product-description">${product.description}</div>
+                    <div class="product-quantity">
+                        <i class="fas fa-cubes"></i> Quantity: ${product.quantity}
+                    </div>
+                    <div class="days-left">${daysLeft} day${daysLeft !== 1 ? 's' : ''} left</div>
+                `;
+                
+                expiringContainer.appendChild(bubble);
+            });
+        }
+        
+        // Update expired items display
+        function updateExpiredDisplay() {
+            const expiredTableBody = document.getElementById('expiredTableBody');
+            const noExpiredItems = document.getElementById('noExpiredItems');
+            
+            // Clear current display
+            expiredTableBody.innerHTML = '';
+            
+            // Filter expired products
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const expiredProducts = products.filter(product => {
+                const expiryDate = new Date(product.expiryDate);
+                expiryDate.setHours(0, 0, 0, 0);
+                return expiryDate < today;
+            });
+            
+            // Sort by most expired first
+            expiredProducts.sort((a, b) => {
+                const aDate = new Date(a.expiryDate);
+                const bDate = new Date(b.expiryDate);
+                return aDate - bDate;
+            });
+            
+            // Update count
+            document.getElementById('expiredCount').textContent = expiredProducts.length;
+            
+            if (expiredProducts.length === 0) {
+                noExpiredItems.style.display = 'block';
+                expiredTableBody.closest('.table-container').style.display = 'none';
+                return;
+            }
+            
+            noExpiredItems.style.display = 'none';
+            expiredTableBody.closest('.table-container').style.display = 'block';
+            
+            // Create table rows for expired products
+            expiredProducts.forEach(product => {
+                const expiryDate = new Date(product.expiryDate);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const timeDiff = today.getTime() - expiryDate.getTime();
+                const daysExpired = Math.floor(timeDiff / (1000 * 3600 * 24));
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${product.barcode}</td>
+                    <td><strong>${product.description}</strong></td>
+                    <td>${product.quantity}</td>
+                    <td>${formatDate(expiryDate)}</td>
+                    <td><span class="status-badge status-expired">${daysExpired} day${daysExpired !== 1 ? 's' : ''}</span></td>
+                    <td>
+                        <button class="action-btn" onclick="showDeleteModal(${product.id}, true)" title="Remove expired item">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </td>
+                `;
+                
+                expiredTableBody.appendChild(row);
+            });
+        }
+        
+        // Update all products display
+        function updateAllProductsDisplay() {
+            const allTableBody = document.getElementById('allProductsTableBody');
+            const noProducts = document.getElementById('noProducts');
+            
+            // Clear current display
+            allTableBody.innerHTML = '';
+            
+            // Update count
+            document.getElementById('allProductsCount').textContent = products.length;
+            
+            if (products.length === 0) {
+                noProducts.style.display = 'block';
+                allTableBody.closest('.table-container').style.display = 'none';
+                return;
+            }
+            
+            noProducts.style.display = 'none';
+            allTableBody.closest('.table-container').style.display = 'block';
+            
+            // Sort by expiry date (closest first)
+            const sortedProducts = [...products].sort((a, b) => {
+                const aDate = new Date(a.expiryDate);
+                const bDate = new Date(b.expiryDate);
+                return aDate - bDate;
+            });
+            
+            // Create table rows for all products
+            sortedProducts.forEach(product => {
+                const expiryDate = new Date(product.expiryDate);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const timeDiff = expiryDate.getTime() - today.getTime();
+                const daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24));
+                
+                // Determine status
+                let statusClass, statusText;
+                if (daysLeft < 0) {
+                    statusClass = 'status-expired';
+                    statusText = 'Expired';
+                } else if (daysLeft === 0) {
+                    statusClass = 'status-critical';
+                    statusText = 'Today!';
+                } else if (daysLeft <= 3) {
+                    statusClass = 'status-warning';
+                    statusText = `${daysLeft} day${daysLeft !== 1 ? 's' : ''}`;
+                } else if (daysLeft <= 10) {
+                    statusClass = 'status-warning';
+                    statusText = `${daysLeft} day${daysLeft !== 1 ? 's' : ''}`;
+                } else {
+                    statusClass = 'status-good';
+                    statusText = 'Good';
+                }
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${product.barcode}</td>
+                    <td><strong>${product.description}</strong></td>
+                    <td>${product.quantity}</td>
+                    <td>${formatDate(expiryDate)}</td>
+                    <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                    <td>
+                        <button class="action-btn" onclick="showDeleteModal(${product.id})" title="Remove product">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </td>
+                `;
+                
+                allTableBody.appendChild(row);
+            });
+        }
+        
+        // Format date as DD/MM/YYYY
+        function formatDate(date) {
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${day}/${month}/${year}`;
+        }
+        
+        // Show toast notification
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            
+            toastMessage.textContent = message;
+            toast.className = 'toast';
+            
+            if (type === 'error') {
+                toast.classList.add('toast-error');
+            } else if (type === 'warning') {
+                toast.classList.add('toast-warning');
+            } else if (type === 'info') {
+                toast.classList.add('toast-info');
+            }
+            
+            toast.style.display = 'flex';
+            
+            // Hide after 3 seconds
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
